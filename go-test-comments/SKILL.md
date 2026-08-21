@@ -148,8 +148,9 @@ Update older code to `cmp` where practical.
 
 **Configure cmp with cmpopts when exact equality does not apply.** For
 approximate equality, other semantic equality, or fields that cannot be compared
-at all (an `io.Reader` field, for example), pass options such as
-`cmpopts.IgnoreInterfaces`. If no configuration fits, do whatever works.
+at all, pass options such as `cmpopts.EquateApprox` for a float tolerance and
+`cmpopts.IgnoreInterfaces` for incomparable fields (an `io.Reader` field, for
+example). If no configuration fits, do whatever works.
 
 **Compare protocol buffer messages with the proto.Equal comparer.**
 

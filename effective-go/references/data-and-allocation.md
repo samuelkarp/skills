@@ -170,8 +170,9 @@ for i := range picture {
 }
 ```
 
-Allocate one flat array and slice the rows out of it when the shape is fixed. This costs one
-allocation and keeps the pixels contiguous:
+Allocate one flat array and slice the rows out of it when the shape is fixed. This costs two
+allocations however many rows there are, where allocating each row separately costs one per row plus
+one for the top-level slice, and it keeps the pixels contiguous:
 
 ```go
 picture := make([][]uint8, YSize)

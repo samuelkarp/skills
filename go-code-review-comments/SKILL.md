@@ -91,7 +91,7 @@ func Encode(w io.Writer, req *Request) { ... }
 package math
 ```
 
-**Start a `package main` comment with a capitalized first word.** After the binary name, several styles work: `// Binary seedgen ...`, `// Command seedgen ...`, `// Program seedgen ...`, `// The seedgen command ...`, or `// Seedgen ...`. These comments are publicly visible and written in proper English, so the first word is capitalized even when it is the binary name and the capital does not match the command-line spelling.
+**Start a `package main` comment with a capitalized first word.** After the binary name, several styles work: `// Binary seedgen ...`, `// Command seedgen ...`, `// Program seedgen ...`, `// The seedgen command ...`, `// The seedgen program ...`, or `// Seedgen ...`. These are examples, and sensible variants of them are acceptable. These comments are publicly visible and written in proper English, so the first word is capitalized even when it is the binary name and the capital does not match the command-line spelling. A lower-case first word is not an acceptable option.
 
 ## Errors
 
