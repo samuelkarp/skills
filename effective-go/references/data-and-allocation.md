@@ -9,8 +9,8 @@ Depth for the "Data" and "Initialization" sections of Effective Go
 zeroes; it does not initialize. The value it returns is ready to use only if the zero value of `T`
 is ready to use.
 
-**Later Go:** since Go 1.26, `new` also accepts a value expression, so `new(int64(300))` allocates
-an `int64` holding 300 and returns a pointer to it.
+The source records one language change of its own: starting with Go 1.26, `new` also accepts a
+value expression, so `new(int64(300))` allocates an `int64` holding 300 and returns its address.
 
 Designing a type so that its zero value is useful removes the need for a constructor. `sync.Mutex`
 has no `NewMutex`, because a zeroed mutex is an unlocked mutex. `bytes.Buffer` has no constructor,

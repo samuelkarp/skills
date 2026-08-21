@@ -7,11 +7,15 @@ description: |
   plumbing, goroutine lifetimes, imports, or test failure messages. Covers gofmt/goimports,
   MixedCaps and initialisms, package and variable names, pointer vs value receivers, in-band
   errors, indenting error flow, named results, naked returns, crypto/rand, and a checklist.
+  This is the review-comment list; for the language idioms underneath it reach for the
+  effective-go skill, and for test code the go-test-comments skill.
 ---
 
 # Go Code Review Comments
 
-These rules come from the Go project's wiki page "Go Code Review Comments" (https://go.dev/wiki/CodeReviewComments), a list of the comments most often made during reviews of Go code. It is a list of common style issues, not a complete style guide, and it supplements Effective Go. Read the section matching the code in front of you, state the rule to the author in the same terms, and run the checklist at the end over a change before approving it.
+These rules come from the Go project's wiki page "Go Code Review Comments" (https://go.dev/wiki/CodeReviewComments), a list of the comments most often made during reviews of Go code. It is a list of common style issues, not a complete style guide. Read the section matching the code in front of you, state the rule to the author in the same terms, and run the checklist at the end over a change before approving it.
+
+The page names two companions. It supplements Effective Go, which carries the language idioms these rules assume; see the effective-go skill. Its testing counterpart is Go Test Comments; see the go-test-comments skill for failure message wording, `t.Error` against `t.Fatal`, `cmp` comparisons, table-driven tests, and error-semantics testing. The two rules below are all this page says about tests.
 
 ## Formatting, imports, and tooling
 
@@ -208,8 +212,7 @@ func split(sum int) (x, y int) {
 **Define an interface in the package that consumes it.** The implementing package returns concrete types (usually a pointer or struct), so it can add methods without extensive refactoring. Do not define an interface on the implementor side "for mocking": design the API so it can be tested through the public API of the real implementation. Do not define an interface before it is used, because without a realistic example of usage it is too hard to see whether the interface is necessary or what methods it needs.
 
 ```go
-// GOOD: consumer.go declares what it needs, consumer_test.go fakes it.
-package consumer
+package consumer // consumer.go: declare the interface where it is used
 
 type Thinger interface{ Thing() bool }
 
@@ -217,20 +220,40 @@ func Foo(t Thinger) string { ... }
 ```
 
 ```go
+package consumer // consumer_test.go: the fake lives with the consumer
+
+type fakeThinger struct{ ... }
+
+func (t fakeThinger) Thing() bool { ... }
+
+// if Foo(fakeThinger{...}) == "x" { ... }
+```
+
+BAD, on the producer side:
+
+```go
 package producer
 
-// BAD: DO NOT DO IT!!! The producer declares the interface.
 type Thinger interface{ Thing() bool }
 
 type defaultThinger struct{ ... }
+
 func (t defaultThinger) Thing() bool { ... }
 func NewThinger() Thinger            { return defaultThinger{...} }
+```
 
-// GOOD: return a concrete type and let the consumer mock it.
+GOOD, the same producer returning a concrete type:
+
+```go
+package producer
+
 type Thinger struct{ ... }
+
 func (t Thinger) Thing() bool { ... }
 func NewThinger() Thinger     { return Thinger{...} }
 ```
+
+Effective Go's "Generality" section points the other way for one case: when a concrete type exists only to implement an interface and will never have exported methods beyond it, that document has the constructor return the interface, as `crc32.NewIEEE` returns a `hash.Hash32`. That applies to a family of interchangeable implementations that already exists. This rule applies to a package with a single implementation. See the effective-go skill.
 
 ## Methods, receivers, and copying
 
@@ -283,6 +306,8 @@ Assertion helpers are tempting, but each one must still produce a useful message
 func TestSingleValue(t *testing.T) { testHelper(t, []int{80}) }
 func TestNoValues(t *testing.T)    { testHelper(t, []int{}) }
 ```
+
+Go Test Comments writes the same message with a comma, `YourFunc(%v) = %v, want %v`, and asks the message to name the function under test. Either separator is in use; see the go-test-comments skill for the rest of the test rules.
 
 ## Review checklist
 

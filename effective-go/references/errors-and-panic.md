@@ -52,14 +52,15 @@ When it is feasible, give an error string a prefix identifying the operation or 
 produced it. The `image` package reports `image: unknown format`. The prefix is what makes a
 message useful in a log line that has no other context.
 
-Keep error strings lower case and without trailing punctuation, so they compose when a caller wraps
-one in a larger message.
+The Errors section stops there. The companion rule, that error strings stay lower case and carry no
+trailing punctuation so they compose inside a larger message, comes from Go Code Review Comments;
+see the go-code-review-comments skill.
 
 ## Callers inspect errors by type
 
-A caller that wants to react to one specific failure asserts on the error's type and then examines
-the fields. If the assertion fails, `ok` is false and the value is nil, so a wrong guess is not a
-crash:
+A caller that wants to react to one specific failure uses a type switch or a type assertion on the
+error, then examines the fields. If the assertion fails, `ok` is false and the value is nil, so a
+wrong guess is not a crash:
 
 ```go
 for try := 0; try < 2; try++ {
@@ -180,50 +181,39 @@ func (regexp *Regexp) error(err string) {
 }
 ```
 
-`doParse` runs the parser under a deferred recovery that translates the panic into a return value.
-The key detail: if the recovered value is not the package's own error type, the deferred function
-panics again, so an unrelated run-time failure such as an index out of range keeps unwinding and is
-reported as the run-time error it is.
-
-```go
-func (regexp *Regexp) doParse(str string) (re *Regexp, err error) {
-    defer func() {
-        if e := recover(); e != nil {
-            re = nil // clear return value
-            err = e.(Error) // will re-panic if not a parse error
-        }
-    }()
-    return regexp.doParseInternal(str), nil
-}
-```
-
-The type assertion `e.(Error)` is what enforces that. On a value of another type it panics, and the
-original failure continues to propagate.
-
-With that in place, the parser can call `regexp.error(...)` from any depth without unwinding by
-hand, and the public API is ordinary Go:
+The exported entry point runs the parser under a deferred recovery that turns the panic into a
+return value. `Compile` names its results, so the deferred closure can set them:
 
 ```go
 // Compile returns a parsed representation of the regular expression.
-func Compile(str string) (*Regexp, error) {
-    regexp := new(Regexp)
-    return regexp.doParse(str)
+func Compile(str string) (regexp *Regexp, err error) {
+    regexp = new(Regexp)
+    // doParse will panic if there is a parse error.
+    defer func() {
+        if e := recover(); e != nil {
+            regexp = nil    // Clear return value.
+            err = e.(Error) // Will re-panic if not a parse error.
+        }
+    }()
+    return regexp.doParse(str), nil
 }
 ```
 
-For callers whose pattern is a compile-time constant, a `Must` variant converts a failure back into
-a panic at initialization, where the mistake is a programming error:
+The type assertion `e.(Error)` carries the whole safety argument. If the recovered value is not the
+package's own error type, the assertion panics, so an unrelated run-time failure such as an index
+out of range keeps unwinding and is reported as the run-time error it is.
+
+With that in place, the parser calls `regexp.error(...)` from any depth without unwinding by hand:
 
 ```go
-// MustCompile is like Compile but panics if the expression cannot be parsed.
-func MustCompile(str string) *Regexp {
-    regexp, err := Compile(str)
-    if err != nil {
-        panic(err)
-    }
-    return regexp
+if pos == 0 {
+    re.error("'*' illegal at start of expression")
 }
 ```
+
+The re-panic replaces the panic value, and both the original and the new failure appear in the crash
+report, so the root cause stays visible. Filtering unexpected values and re-panicking with the
+original takes more code.
 
 The rule this illustrates: do not let a panic escape the package. Recover at the boundary and
 present an `error`, and re-panic on anything you did not raise yourself.

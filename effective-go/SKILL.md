@@ -7,6 +7,8 @@ description: |
   designing interfaces and choosing pointer or value receivers, using embedding and
   the blank identifier, writing goroutine and channel code, or handling errors, panic,
   and recover. Covers gofmt, doc comments, control structures, defer, String, and init.
+  This is the language-idiom baseline; for review-comment style rules reach for the
+  go-code-review-comments skill, and for test code the go-test-comments skill.
 ---
 
 # Effective Go
@@ -136,6 +138,8 @@ func nextInt(b []byte, pos int) (value, nextPos int) {
 }
 ```
 
+Go Code Review Comments narrows this: leave results unnamed when the types are already clear, since named results read as noise in godoc, and keep a bare `return` to functions of a handful of lines. See the go-code-review-comments skill.
+
 **Defer cleanup on the line after you acquire the resource.** The deferred call runs when the enclosing function returns, on every path. Deferred calls run in LIFO order, and their arguments are evaluated when the `defer` executes, not when the call runs.
 
 ```go
@@ -155,7 +159,7 @@ var p *[]int = new([]int) // *p is nil; rarely what you want
 v := make([]int, 100)     // v refers to a new array of 100 ints
 ```
 
-**Later Go:** since Go 1.26 `new` also takes a value expression, as in `new(int64(300))`.
+The source records one change of its own here: since Go 1.26 `new` also takes a value expression, as in `new(int64(300))`.
 
 **Design types so the zero value is useful.** `sync.Mutex` has no explicit constructor because its zero value is an unlocked mutex; `bytes.Buffer`'s zero value is an empty buffer. The property is transitive, so a struct of such fields is ready to use after `var v T`.
 
@@ -247,7 +251,7 @@ func (s Sequence) String() string {
 str, ok := value.(string) // ok is false and str is "" when the type differs
 ```
 
-**Export the interface when the concrete type exists only to implement it.** `crc32.NewIEEE` returns a `hash.Hash32`, so swapping in `adler32.New` changes one line at the call site.
+**Export the interface when the concrete type exists only to implement it.** `crc32.NewIEEE` returns a `hash.Hash32`, so swapping in `adler32.New` changes one line at the call site. Go Code Review Comments takes the opposite position on producer-side interfaces: the implementing package returns a concrete type and the consuming package declares the interface it needs. The two Go documents disagree here, each stating its own rule. Apply this one to a family of interchangeable implementations that already exists, such as the hash and cipher packages, and see the go-code-review-comments skill before adding an interface to a package with a single implementation.
 
 ## The blank identifier
 
@@ -382,7 +386,7 @@ if e, ok := err.(*os.PathError); ok && e.Err == syscall.ENOSPC {
 
 **Later Go:** since Go 1.13, wrap with `fmt.Errorf("...: %w", err)` and inspect with `errors.Is` and `errors.As`, which see through wrapping. The source predates all three.
 
-**Panic only when the program truly cannot continue.** A library that cannot initialize itself may panic; a computation that fails to converge may panic. Ordinary failures return errors.
+**Panic only when the program truly cannot continue.** The source's one endorsed case is initialization: a library that truly cannot set itself up may panic. Its non-converging `CubeRoot` is labeled an example, and the source says real library functions should avoid panic and let the program keep running wherever the problem can be masked or worked around.
 
 **Recover only in a deferred function, and only for panics you raised.** `recover` stops the unwinding and returns the value passed to `panic`. Re-panic on any value your package did not create, so an unrelated runtime error is not silently converted to an error return.
 
@@ -397,11 +401,15 @@ func safelyDo(work *Work) {
 }
 ```
 
-**Convert an internal panic to an error at the package boundary.** A recursive parser can panic with a private error type on bad input; the exported `Compile` recovers and returns an `error`, while `MustCompile` panics for callers who supply constant input.
+**Convert an internal panic to an error at the package boundary.** A recursive parser can panic with a private error type on bad input, and the exported `Compile` recovers it into an `error` return. The recovery asserts the panic value to that private type, so anything the package did not raise keeps unwinding.
 
-## Not covered by the source
+## Scope
 
 The document predates modules, generics, and error wrapping and states this itself. Take package layout, `go.mod`, type parameters, `context`, `errors.Is`/`errors.As`, and `sync.WaitGroup`-based fan-in from current Go documentation.
+
+One section of the source is left out here. "A web server" is a worked QR-code server built from `flag`, `http.HandleFunc`, `http.ListenAndServe`, and `html/template`; its style points are the `Handler` and `HandlerFunc` idioms already covered above, so read the section itself when you want the end-to-end program.
+
+Two neighboring documents cover ground this one does not. Review-time style calls, initialism casing, in-band errors, receiver-type choice, and goroutine lifetimes are in the go-code-review-comments skill. Everything about test code is in the go-test-comments skill.
 
 ## Review checklist
 

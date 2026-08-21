@@ -8,7 +8,8 @@ description: |
   Use when writing or reviewing Go tests and _test.go files, building
   table-driven tests, wording t.Errorf/t.Fatalf messages, comparing structs or
   JSON output in tests, naming t.Run subtests, checking returned errors, or
-  weighing an assertion library such as testify.
+  weighing an assertion library such as testify. This is the test-code list; for
+  non-test Go style reach for the go-code-review-comments skill.
 ---
 
 # Go Test Comments
@@ -29,6 +30,10 @@ carry the longer examples; open one when the summary here is not enough.
   argument against assert libraries and how to rewrite assertion-style checks.
 - [references/error-semantics.md](references/error-semantics.md): testing error
   types, string matching that is acceptable, structuring errors for tests.
+
+Everything outside `_test.go` files, including naming, doc comments, error
+strings, receivers, and interface placement, belongs to the parent page; see the
+go-code-review-comments skill.
 
 ## Failure messages
 
@@ -335,6 +340,13 @@ Go prints structures well, so a single `t.Errorf` with `%+v` says what happened.
 
 The wiki page does not cover test doubles (fakes, stubs, mocks), `t.Cleanup`,
 test-only exported API, control flow in test bodies, or goroutines in tests.
+
+Go Code Review Comments has its own two-rule summary of test failures under
+"Useful Test Failures", which writes the message with a semicolon,
+`Foo(%q) = %d; want %d`. Both separators are in use; the rest of that page
+covers non-test code. It also asks a new package to ship a runnable `Example`
+function or a test demonstrating a complete call sequence, which this page does
+not mention. See the go-code-review-comments skill.
 
 ## Review checklist
 
