@@ -22,11 +22,24 @@ Concrete removals from a review pass over runj's `integ-test-rootfs-reclaim`:
 A comment earns its place by saying something a reader of this codebase cannot
 infer.
 
+**Go doc comments are the exception to cutting.** An exported Go name keeps a
+doc comment, and its first sentence begins with the name, even when it reads
+as a restatement; godoc and linters depend on it. Cutting applies to what
+follows that sentence. Test functions are exempt from the convention: one
+gets a doc comment only when it says something clarifying that the test name
+and body do not.
+
+```
+BAD   (cut as a restatement) func Encode(w io.Writer, req *Request) error
+GOOD  // Encode writes the JSON encoding of req to w.
+      func Encode(w io.Writer, req *Request) error
+```
+
 ## Do not describe the lines below
 
 A comment that narrates the next few lines is a restatement. Above two calls
-that pass a pair of parameters together, "the kernel requires both ... together,
-so both are passed" keeps the requirement and drops the tail.
+that pass a pair of parameters together, "the kernel requires both ...
+together, so both are passed" keeps the requirement and drops the tail.
 
 ## Explain from the constraint
 
@@ -43,6 +56,17 @@ GOOD  The OCI spec stores allow as bool, but we need to detect the difference
 
 The rewrite drops the road not taken and states the data-model fact that forces
 the design.
+
+## Keep the comment self-contained
+
+Describe a function in its own terms, not by reference to another one. A
+comparison sends the reader to read somewhere else first. State what this
+function does.
+
+```
+BAD   checks X as dialContext checks Y
+GOOD  checks X against Y
+```
 
 ## Name the actor
 

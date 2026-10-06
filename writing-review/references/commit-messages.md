@@ -4,9 +4,29 @@ Follow the chris.beams style, https://chris.beams.io/posts/git-commit/.
 
 ## Subject
 
-- Imperative mood, capitalized, no trailing period, 50 characters or fewer.
+- Imperative mood, first word lowercase, no trailing period, 50 characters or
+  fewer.
 - The subject verb names the literal action.
+- A `scope:` prefix is common (`integration:`, `version:`, `go.mod:`).
 - Blank line between subject and body.
+
+Sam's handwritten runj subjects:
+
+    support runtime-spec allow property
+    use ifconfig(8) to manage VNet interfaces
+    move to direct syscalls and eliminate jail(8)
+    integration: emit stderr from failed tests
+    go.mod: require Go 1.20
+
+Proper nouns keep their capitals. A few of his subjects are capitalized
+(`Release v0.1.0`), so lowercase is the norm, not an absolute.
+
+**Written conventions may be Claude's.** Much of the written guidance
+(CLAUDE.md, memory, this skill) was drafted by Claude, and some of it has been
+wrong about Sam's style: it once said "capitalized" while his own commits were
+lowercase. When a written rule and his own artifacts disagree, the artifacts
+win and the written rule is the thing to fix. Check before enforcing a rule
+against his own work.
 
 ## Default to a subject only
 
@@ -19,10 +39,18 @@ production change made to enable a test. Keep the body to that fact.
 
 Do not write a body that justifies why the change works or is safe when the
 diff shows it, and never answer a concern raised only in the working
-conversation. For "Use createJail in TestJailHostMode" a paragraph explained
-that the helper's return sufficed because the test needs only the jail id after
-create. It was inferable from the diff and answered the author's own earlier
-worry. The commit went back to a subject line.
+conversation.
+
+```
+BAD   Use createJail in TestJailHostMode
+
+      createJail's return suffices because the test needs only the jail id
+      after create.
+GOOD  Use createJail in TestJailHostMode
+```
+
+The body was inferable from the diff and answered the author's own earlier
+worry.
 
 Wrap the body at 72 characters and count before committing:
 
@@ -32,10 +60,10 @@ git log -1 --format=%B | awk 'length>72'
 
 ## Body style
 
-Review rewrote a body on runj's `root-allow` ("Handle unset allow fields").
-The differences are the style to copy.
+A body on runj's `root-allow` ("Handle unset allow fields"). The differences
+between the two are the style to copy.
 
-Before:
+BAD:
 
 > Pass an allow.* parameter only for a field the container configuration
 > sets.  A field set true is passed as allow.<name> and one set false as
@@ -47,7 +75,7 @@ Before:
 > toggles as bools tagged omitempty, which collapses the two, so
 > oci.LoadJailAllow reads the block again through pointer-typed fields.
 
-After:
+GOOD:
 
 > Only pass allow.* parameters for explicitly set fields. True values are
 > passed as allow.<name> and false values are passed as allow.no<name>. Do
@@ -71,11 +99,11 @@ What to carry over:
 - **Cause before effect.** Lead with the constraint (the type is a bool), then
   what it makes impossible, then what the change does about it. Do not lead
   with the need and arrive at the cause last.
-- **Drop the function name when the shape is the point.** The rewrite cut
+- **Drop the function name when the shape is the point.** GOOD drops
   `oci.LoadJailAllow` for "A separate defined struct with *bool fields is used
   instead"; the diff supplies the location.
 
-Two boundaries, both confirmed in review:
+Two boundaries:
 
 - **A contrast is wanted when the body describes a problem and the approach
   taken to fix it.** "is used instead" contrasts with the `specs-go` type named
@@ -92,10 +120,14 @@ history will not see: "X rather than only Y", "instead of the old Y", "no
 longer does Y". The diff against the parent already shows what changed.
 
 This bites hardest after squashing or amending. A squashed commit added both a
-create/delete test and a behavioral test, and the message said the behavioral
-test verifies the kernel "rather than only that create and delete succeed". No
-create/delete-only state exists in history. It became "confirming the kernel
-applied ip6.addr".
+create/delete test and a behavioral test. No create/delete-only state exists
+in history.
+
+```
+BAD   verifies the kernel applied the address rather than only that create and
+      delete succeed
+GOOD  confirming the kernel applied ip6.addr
+```
 
 Contrasting two things that both exist in the current tree, such as two
 coexisting tests, is fine.
@@ -104,16 +136,23 @@ coexisting tests, is fine.
 
 Never credit Claude with `Co-authored-by` or `Signed-off-by`. AI tools do not
 hold copyright. `Assisted-by` is the correct attribution, per the Linux kernel
-coding-assistants guide
-(`Documentation/process/coding-assistants.rst`):
+coding-assistants guide (`Documentation/process/coding-assistants.rst`):
 
 ```
 Assisted-by: AGENT_NAME:MODEL_VERSION [TOOL]
 ```
 
 For example `Assisted-by: Claude Code:claude-opus-5`. Name the model that
-authored the code, not the orchestrating model. When more than one model
-authored parts of a commit, name the one that wrote the bulk of it.
+authored the code, not the orchestrating model.
+
+Multiple authoring models are an open question, and the current practice
+depends on how the work was done:
+
+- Within one delegation cycle there is one primary author model. Name it.
+- When separate coding agents each made substantive changes to a commit, Sam
+  has kept one `Assisted-by` trailer per model.
+
+When the situation fits neither case cleanly, ask.
 
 `Co-authored-by` is correct for a human whose work the commit carries. When a
 commit takes code or a test case from someone else's branch, credit them with
